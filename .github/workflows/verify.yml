@@ -1,0 +1,23 @@
+# Fork-only: runs the PR's compression tests with the fix and with the size
+# check removed, to show the new tests fail without it.
+name: Verify compression tests
+
+on: push
+
+jobs:
+  test:
+    name: ${{ matrix.variant }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [with-fix, without-fix]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove the size check
+        if: matrix.variant == 'without-fix'
+        run: |
+          perl -0pi -e 's/\n        \/\/ Refuse a size the input cannot expand to.*?\n        \}\n/\n/s' arrow-ipc/src/compression.rs
+          git diff
+      - name: Test
+        run: cargo test -p arrow-ipc --all-features --lib -- compression::tests
